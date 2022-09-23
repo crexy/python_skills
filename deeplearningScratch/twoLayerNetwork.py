@@ -184,7 +184,7 @@ if __name__ == "__main__":
     #     print(f'Key({key}): {diff}')
 
     # 학습 구현
-    # 배치 사이즈: 100, 에포크: 1000, 학습방법: 경사하강법, learning rate: 0.01
+    # 배치 사이즈: 100, 에포크: 1000, 최적화: 경사하강법, learning rate: 0.01
 
     batch_size = 100
     epoch = 1000
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         # 미분값 구하기
         grad = network.gradient(x_batch, t_batch)
 
-        # 경사하강법 학습 수행
+        # 최적화(경사하강법) 수행
         for key in grad.keys():
             network.params[key] -= grad[key]*learning_rate
 
