@@ -1,4 +1,4 @@
-from typing import OrderedDict
+from collections import OrderedDict
 import numpy as np
 from deeplearning_common_func import DLCFunc
 from dataset.mnist import load_mnist
@@ -176,6 +176,7 @@ class SGD:
             param[key] -= grad[key]*self.lr
 
 # 모멘텀 옵티마이저 클래스
+# GD 기반의 optimizer 최적화 탐색에 v(velocity)개념을 추가하여 GD보다 더 빨리 가중치의 감소, 증가 속도가 빠르고, 가중치의 기울기 방향이 부드럽다.
 class Momentum:
     def __init__(self, lr=0.01, momentum=0.9):
         self.lr = lr
@@ -190,6 +191,12 @@ class Momentum:
             self.v[key] = self.momentum*self.v[key] - (self.lr*grad[key])
             param[key] += self.v[key]
 
+# 각각의 매개변수에 맞춰서 학습률을 변화시키는 즉 학습을 진행하면서, 학습률을 점차 줄여가는 방법 이다.
+# 학습률 감소시키는 기법인 learning rate decay와 비슷하다.
+# AdaGrad 알고리즘은 학습률을 감소시키지만 경사가 완만한 차원보다 가파른 차원에 대해 더 빠르게 감소된다.
+# 이를 adaptive learning rate라고 부르며 전역 최적점 방향으로 곧장 가도록 갱신하는데 도움이 된다.
+# 하지만 Ada Grad 알고리즘은 하습률이 너무 감소되어 전역 최적점에 도착하기 전에 알고리즘이 자주 멈추곤 해서 자주 쓰이지는 않지만,
+# 이를 알면 다른 adaptive 학습률 옵티마이저를 이해하는 데 도움이 된다.
 class AdaGrad:
     def __init__(self, lr=0.01):
         self.lr = lr
@@ -205,6 +212,7 @@ class AdaGrad:
             #params[key] -= self.lr * grad[key] / (np.sqrt(self.h[key]) + 1e-7)
 
 
+# Momentum 과 AdaGrad를 융합한 최적화 방법
 class Adam:
     """Adam (http://arxiv.org/abs/1412.6980v8)"""
 
@@ -239,6 +247,7 @@ class Adam:
             # params[key] += self.lr * unbias_m / (np.sqrt(unbisa_b) + 1e-7)
 
 
+# AdaGrad에 기울기를 단순 누적하지 않고 지수 가중 이동 평균(EWMA)을 적용한 기법
 class RMSprop:
     """RMSprop"""
 
@@ -261,7 +270,6 @@ class RMSprop:
 
 class Nesterov:
     """Nesterov's Accelerated Gradient (http://arxiv.org/abs/1212.0901)"""
-
     # NAG는 모멘텀에서 한 단계 발전한 방법이다. (http://newsight.tistory.com/224)
 
     def __init__(self, lr=0.01, momentum=0.9):
@@ -281,6 +289,40 @@ class Nesterov:
             params[key] += self.momentum * self.momentum * self.v[key]
             params[key] -= (1 + self.momentum) * self.lr * grads[key]
 
+
+def run_learning(optimizer):
+    # 학습 구현
+    # 배치 사이즈: 100, 에포크: 1000, 최적화: 경사하강법, learning rate: 0.01
+
+    batch_size = 100
+    epoch = 1000
+    list_loss = []  # 손실값 리스트
+
+    #optimizer = Nesterov()  # 가중치 값 최적화 수행
+
+    for ep in range(epoch):
+        mask = np.random.choice(x_train.shape[0], batch_size)  # 배치 마스크
+        # 미니배치 데이터
+        x_batch = x_train[mask]
+        t_batch = t_train[mask]
+
+        # 미분값 구하기
+        grad = network.gradient(x_batch, t_batch)
+
+        # 최적화(경사하강법) 수행
+        optimizer.update(network.params, grad)
+
+        # 손실값
+        loss = network.loss(x_batch, t_batch)
+        list_loss.append(loss)  # 손실값 그래프를 그리기 위해 저장
+        # 정확도
+        accuracy = network.accuracy(x_batch, t_batch)
+        if (ep % 200) == 0 and ep != 0:
+            print(f'epoch: {ep}, loss: {loss}, accuracy: {accuracy}')
+    print(f'epoch: {ep}, loss: {loss}, accuracy: {accuracy}')
+
+    return list_loss
+
 if __name__ == "__main__":
     (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
     network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
@@ -296,42 +338,27 @@ if __name__ == "__main__":
     #     diff = np.average(num_grad[key] - back_grad[key])
     #     print(f'Key({key}): {diff}')
 
-    # 학습 구현
-    # 배치 사이즈: 100, 에포크: 1000, 최적화: 경사하강법, learning rate: 0.01
+    dic_opt={}
+    dic_opt["SGD"] = SGD()
+    dic_opt["Monmentum"] = Momentum()
+    dic_opt["AdaGrad"] = AdaGrad()
+    dic_opt["RMSprop"] = RMSprop()
+    dic_opt["Adam"] = Adam()
+    dic_opt["Nesterov"] = Nesterov()
 
-    batch_size = 100
-    epoch = 1000
-    learning_rate = 1e-1
-    list_loss = [] # 손실값 리스트
-
-    optimizer = Nesterov() # 가중치 값 최적화 수행
-
-
-    for ep in range(epoch):
-        mask = np.random.choice(x_train.shape[0], batch_size) # 배치 마스크
-        # 미니배치 데이터
-        x_batch = x_train[mask]
-        t_batch = t_train[mask]
-
-        # 미분값 구하기
-        grad = network.gradient(x_batch, t_batch)
-
-        # 최적화(경사하강법) 수행
-        optimizer.update(network.params, grad)
-
-        # 손실값
-        loss = network.loss(x_batch, t_batch)
-        list_loss.append(loss) # 손실값 그래프를 그리기 위해 저장
-        # 정확도
-        accuracy = network.accuracy(x_batch, t_batch)
-        if (ep % 10) == 0:
-            print(f'epoch: {ep+1}, loss: {loss}, accuracy: {accuracy}')
     # 손실값 그래프 그리기
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(10, 6))
+
     plt.title("Loss value")
     plt.ylabel("loss")
     plt.xlabel("epoch")
-    plt.plot(list_loss)
+
+    for key in dic_opt.keys():
+        print("=============== Optimizer: "+key+" ===============")
+        loss_data = run_learning(dic_opt[key])
+        plt.plot(loss_data, label=key)
+
+    plt.legend()
     plt.show()
 
 
