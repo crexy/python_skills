@@ -290,12 +290,11 @@ class Nesterov:
             params[key] -= (1 + self.momentum) * self.lr * grads[key]
 
 
-def run_learning(optimizer):
+def run_learning(optimizer, network, x_train, t_train, epoch=1000):
     # 학습 구현
     # 배치 사이즈: 100, 에포크: 1000, 최적화: 경사하강법, learning rate: 0.01
 
     batch_size = 100
-    epoch = 1000
     list_loss = []  # 손실값 리스트
 
     #optimizer = Nesterov()  # 가중치 값 최적화 수행
@@ -323,22 +322,20 @@ def run_learning(optimizer):
 
     return list_loss
 
-if __name__ == "__main__":
-    (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
-    network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
-    # 기울기 검증 하기
-    #
-    # x_batch = x_train[:3]
-    # t_batch = t_train[:3]
-    #
-    # num_grad = network.numerical_gradient(x_batch, t_batch)
-    # back_grad = network.gradient(x_batch, t_batch)
-    #
-    # for key in num_grad.keys():
-    #     diff = np.average(num_grad[key] - back_grad[key])
-    #     print(f'Key({key}): {diff}')
+#기울기 검증 하기
+def verify_weightGradient(network, x_train, t_train):
+    x_batch = x_train[:3]
+    t_batch = t_train[:3]
+    num_grad = network.numerical_gradient(x_batch, t_batch)
+    back_grad = network.gradient(x_batch, t_batch)
 
-    dic_opt={}
+    for key in num_grad.keys():
+        diff = np.average(num_grad[key] - back_grad[key])
+        print(f'Key({key}): {diff}')
+
+# optimizer 성능 비교
+def compare_optimizerPerformance(network, x_train, t_train):
+    dic_opt = {}
     dic_opt["SGD"] = SGD()
     dic_opt["Monmentum"] = Momentum()
     dic_opt["AdaGrad"] = AdaGrad()
@@ -354,12 +351,53 @@ if __name__ == "__main__":
     plt.xlabel("epoch")
 
     for key in dic_opt.keys():
-        print("=============== Optimizer: "+key+" ===============")
-        loss_data = run_learning(dic_opt[key])
+        print("=============== Optimizer: " + key + " ===============")
+        loss_data = run_learning(dic_opt[key], network, x_train, t_train)
         plt.plot(loss_data, label=key)
+    plt.legend()
+    plt.show()
+
+# 가중치 초기값 성능 비교
+def compare_weightInitValuePerformance(x_train, t_train):
+    network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10, weight_init_std=0.01)
+    print("Weight initial value: 0.01")
+    dft_std_data = run_learning(SGD(), network, x_train, t_train, epoch=500)
+
+    print("Weight initial value: Xavier")
+    Xavier = np.sqrt(1/50.0)
+    network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10, weight_init_std=Xavier)
+    xavier_data = run_learning(SGD(), network, x_train, t_train, epoch=500)
+
+    print("Weight initial value: He")
+    He = np.sqrt(2/50)
+    network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10, weight_init_std=He)
+    he_data = run_learning(SGD(), network, x_train, t_train, epoch=500)
+
+    plt.figure(figsize=(10, 6))
+    plt.title("Loss value")
+    plt.ylabel("loss")
+    plt.xlabel("epoch")
+
+    plt.plot(dft_std_data, label = "std=0.01", marker="o")
+    plt.plot(xavier_data, label="Xavier", marker="v")
+    plt.plot(he_data, label="He", marker="^")
 
     plt.legend()
     plt.show()
+
+
+
+
+if __name__ == "__main__":
+    (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
+    #network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
+    # 옵티마이저 성능 비교
+    # compare_optimizerPerformance(network, x_train, t_train)
+
+    # 가중치 초기값 성능 비교
+    compare_weightInitValuePerformance(x_train, t_train)
+
+
 
 
 

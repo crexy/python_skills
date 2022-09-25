@@ -29,8 +29,8 @@ class DLCFunc: # deeplearning common function
         return y
 
     @staticmethod
-    def test():
-        print("test")
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
 
     @classmethod
     def cross_entropy_error(cls, y, t):
@@ -138,10 +138,6 @@ def cross_entropy_error(y, t):
 
     batch_size = y.shape[0]
     return -np.sum(np.log(y[np.arange(batch_size), t])) / batch_size
-
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
 
 class Relu:
     def __init__(self):
