@@ -300,7 +300,8 @@ def run_learning(optimizer, network, x_train, t_train, epoch=1000):
     #optimizer = Nesterov()  # 가중치 값 최적화 수행
 
     for ep in range(epoch):
-        mask = np.random.choice(x_train.shape[0], batch_size)  # 배치 마스크
+        # mask = np.random.choice(x_train.shape[0], batch_size)  # 배치 마스크
+        mask = DLCFunc.random_index(0, x_train.shape[0], batch_size) # 중복 없는 미니배치 마스크
         # 미니배치 데이터
         x_batch = x_train[mask]
         t_batch = t_train[mask]
