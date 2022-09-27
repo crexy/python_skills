@@ -26,15 +26,19 @@ def overfitting():
     network.init_layers(layers, last_layer)
     #network.learning(x_train, t_train, Adam(), 100, 300)
 
-    epoch_times = 200
+    epoch_max = 20
+    epoch_cnt = 0
     batch_size = 100
 
-    optimizer = Adam()
+    optimizer = SGD()
 
     list_trainAcc = []
     list_testAcc = []
 
-    for ep in range(epoch_times):
+    iter_per_epoch = max(x_train.shape[0]/batch_size, 1)
+
+
+    for i in range(100000000):
         # 미니배치 얻기
         # 전체 데이터가 1000개이고 그중 미니배치 개수가 100 일경우
         # 0~999 사이의 숫자 중 무작위로 중복되지 않는 수 100개를 얻는다.
@@ -46,15 +50,22 @@ def overfitting():
         params = network.params()
         optimizer.update(params, grad)
 
-        acc = network.accuracy(x_train, t_train)
-        list_trainAcc.append(acc)
+        if i % iter_per_epoch == 0:
+            acc_train = network.accuracy(x_train, t_train)
+            list_trainAcc.append(acc_train)
 
-        #mask = DLCFunc.random_index(0, x_test.shape[0], batch_size)  # 중복 없는 미니배치 마스크
-        #x_batch = x_test[mask]
-        #t_batch = t_test[mask]
+            #mask = DLCFunc.random_index(0, x_test.shape[0], batch_size)  # 중복 없는 미니배치 마스크
+            #x_batch = x_test[mask]
+            #t_batch = t_test[mask]
 
-        acc = network.accuracy(x_test, t_test)
-        list_testAcc.append(acc)
+            acc_test = network.accuracy(x_test, t_test)
+            list_testAcc.append(acc_test)
+
+            epoch_cnt += 1
+
+            print(f'epoch: {epoch_cnt}, train accuracy: {acc_train}, test accuracy: {acc_test}')
+            if epoch_cnt > epoch_max:
+                break
 
     plt.figure(figsize=(10, 6))
     plt.title("Accuracy value")

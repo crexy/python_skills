@@ -95,3 +95,19 @@ class SoftMaxWithLoss:
         # bl = (bs+ba)*np.exp(self.x)
         bl = self.y - self.t
         return bl
+
+
+class Dropout:
+    def __init__(self, dropout_ratio=0.5):
+        self.dropout_ratio = dropout_ratio
+        self.mask = None
+    def forward(self, x, train_flg=True):
+        if train_flg:
+            self.mask = np.random.rand(*x.shape) > self.dropout_ratio
+            #x[self.mask] = 0
+            x = x * self.mask
+        else:
+            x = x * (1-self.dropout_ratio)
+        return x
+    def backward(self, dout):
+        return self.mask * dout
