@@ -4,6 +4,7 @@ from multiLayerNetwork import MultiLayerNetwork as mnetwork
 from dataset.mnist import load_mnist
 import matplotlib.pyplot as plt
 
+
 def overfitting():
 
     (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
